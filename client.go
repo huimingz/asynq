@@ -306,7 +306,12 @@ func composeOptions(opts ...Option) (option, error) {
 			if len(opt) == 0 {
 				return option{}, errors.New("metadata cannot be empty")
 			}
-			res.metadata = opt
+			if res.metadata == nil {
+				res.metadata = make(map[string]string)
+			}
+			for k, v := range opt {
+				res.metadata[k] = v
+			}
 		default:
 			// ignore unexpected option
 		}
