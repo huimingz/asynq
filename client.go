@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/hibiken/asynq/internal/base"
 	"github.com/hibiken/asynq/internal/errors"
 	"github.com/hibiken/asynq/internal/rdb"
-	"github.com/redis/go-redis/v9"
 )
 
 // A Client is responsible for scheduling tasks.
@@ -60,6 +61,7 @@ const (
 	TaskIDOpt
 	RetentionOpt
 	GroupOpt
+	MetadataOpt
 )
 
 // Option specifies the task processing behavior.
@@ -86,6 +88,7 @@ type (
 	processInOption time.Duration
 	retentionOption time.Duration
 	groupOption     string
+	metadataOption  map[string]string
 )
 
 // MaxRetry returns an option to specify the max number of times
@@ -172,6 +175,14 @@ func (ttl uniqueOption) String() string     { return fmt.Sprintf("Unique(%v)", t
 func (ttl uniqueOption) Type() OptionType   { return UniqueOpt }
 func (ttl uniqueOption) Value() interface{} { return time.Duration(ttl) }
 
+func Metadata(md map[string]string) Option {
+	return metadataOption(md)
+}
+
+func (md metadataOption) String() string     { return fmt.Sprintf("Metadata(%#v)", md) }
+func (md metadataOption) Type() OptionType   { return MetadataOpt }
+func (md metadataOption) Value() interface{} { return map[string]string(md) }
+
 // ProcessAt returns an option to specify when to process the given task.
 //
 // If there's a conflicting ProcessIn option, the last option passed to Enqueue overrides the others.
@@ -237,6 +248,7 @@ type option struct {
 	processAt time.Time
 	retention time.Duration
 	group     string
+	metadata  map[string]string
 }
 
 // composeOptions merges user provided options into the default options
@@ -290,6 +302,11 @@ func composeOptions(opts ...Option) (option, error) {
 				return option{}, errors.New("group key cannot be empty")
 			}
 			res.group = key
+		case metadataOption:
+			if len(opt) == 0 {
+				return option{}, errors.New("metadata cannot be empty")
+			}
+			res.metadata = opt
 		default:
 			// ignore unexpected option
 		}
@@ -392,6 +409,7 @@ func (c *Client) EnqueueContext(ctx context.Context, task *Task, opts ...Option)
 		UniqueKey: uniqueKey,
 		GroupKey:  opt.group,
 		Retention: int64(opt.retention.Seconds()),
+		Metadata:  opt.metadata,
 	}
 	now := time.Now()
 	var state base.TaskState

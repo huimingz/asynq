@@ -14,12 +14,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hibiken/asynq/internal/errors"
-	pb "github.com/hibiken/asynq/internal/proto"
-	"github.com/hibiken/asynq/internal/timeutil"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/hibiken/asynq/internal/errors"
+	pb "github.com/hibiken/asynq/internal/proto"
+	"github.com/hibiken/asynq/internal/timeutil"
 )
 
 // Version of asynq library and CLI.
@@ -294,6 +295,9 @@ type TaskMessage struct {
 	//
 	// Use zero to indicate no value.
 	CompletedAt int64
+
+	// Metadata holds arbitrary key-value pairs associated with the task.
+	Metadata map[string]string
 }
 
 // EncodeMessage marshals the given task message and returns an encoded bytes.
@@ -316,6 +320,7 @@ func EncodeMessage(msg *TaskMessage) ([]byte, error) {
 		GroupKey:     msg.GroupKey,
 		Retention:    msg.Retention,
 		CompletedAt:  msg.CompletedAt,
+		Metadata:     msg.Metadata,
 	})
 }
 
@@ -340,6 +345,7 @@ func DecodeMessage(data []byte) (*TaskMessage, error) {
 		GroupKey:     pbmsg.GetGroupKey(),
 		Retention:    pbmsg.GetRetention(),
 		CompletedAt:  pbmsg.GetCompletedAt(),
+		Metadata:     pbmsg.GetMetadata(),
 	}, nil
 }
 
