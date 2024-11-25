@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
 	"github.com/hibiken/asynq/internal/base"
 )
 
@@ -31,10 +32,14 @@ type Task struct {
 
 	// w is the ResultWriter for the task.
 	w *ResultWriter
+
+	// md holds metadata associated with the task.
+	md map[string]string
 }
 
-func (t *Task) Type() string    { return t.typename }
-func (t *Task) Payload() []byte { return t.payload }
+func (t *Task) Type() string                { return t.typename }
+func (t *Task) Payload() []byte             { return t.payload }
+func (t *Task) Metadata() map[string]string { return t.md }
 
 // ResultWriter returns a pointer to the ResultWriter associated with the task.
 //
@@ -53,11 +58,12 @@ func NewTask(typename string, payload []byte, opts ...Option) *Task {
 }
 
 // newTask creates a task with the given typename, payload and ResultWriter.
-func newTask(typename string, payload []byte, w *ResultWriter) *Task {
+func newTask(typename string, payload []byte, w *ResultWriter, md map[string]string) *Task {
 	return &Task{
 		typename: typename,
 		payload:  payload,
 		w:        w,
+		md:       md,
 	}
 }
 
@@ -442,10 +448,11 @@ func (opt RedisClusterClientOpt) MakeRedisClient() interface{} {
 //
 // Three URI schemes are supported, which are redis:, rediss:, redis-socket:, and redis-sentinel:.
 // Supported formats are:
-//     redis://[:password@]host[:port][/dbnumber]
-//     rediss://[:password@]host[:port][/dbnumber]
-//     redis-socket://[:password@]path[?db=dbnumber]
-//     redis-sentinel://[:password@]host1[:port][,host2:[:port]][,hostN:[:port]][?master=masterName]
+//
+//	redis://[:password@]host[:port][/dbnumber]
+//	rediss://[:password@]host[:port][/dbnumber]
+//	redis-socket://[:password@]path[?db=dbnumber]
+//	redis-sentinel://[:password@]host1[:port][,host2:[:port]][,hostN:[:port]][?master=masterName]
 func ParseRedisURI(uri string) (RedisConnOpt, error) {
 	u, err := url.Parse(uri)
 	if err != nil {

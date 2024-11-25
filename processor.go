@@ -16,12 +16,13 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/hibiken/asynq/internal/base"
 	asynqcontext "github.com/hibiken/asynq/internal/context"
 	"github.com/hibiken/asynq/internal/errors"
 	"github.com/hibiken/asynq/internal/log"
 	"github.com/hibiken/asynq/internal/timeutil"
-	"golang.org/x/time/rate"
 )
 
 type processor struct {
@@ -229,6 +230,7 @@ func (p *processor) exec() {
 						broker: p.broker,
 						ctx:    ctx,
 					},
+					msg.Metadata,
 				)
 				resCh <- p.perform(ctx, task)
 			}()
