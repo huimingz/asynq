@@ -304,7 +304,7 @@ func composeOptions(opts ...Option) (option, error) {
 			res.group = key
 		case metadataOption:
 			if len(opt) == 0 {
-				return option{}, errors.New("metadata cannot be empty")
+				continue
 			}
 			if res.metadata == nil {
 				res.metadata = make(map[string]string)
